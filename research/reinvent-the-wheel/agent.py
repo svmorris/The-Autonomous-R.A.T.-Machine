@@ -16,6 +16,7 @@ Additional things that cross my mind:
 - Maybe this llm also includes the entity memory stuff
 - Also commands should run in a podman instance for added safety
 - If a command output is too long, we could get an llm to summarise it
+- make plans?
 
 """
 
@@ -30,7 +31,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 from enum import Enum, auto
 
-from base_prompt import P_SYSTEM
+from prompts import P_SYSTEM
 from langchain.chains import LLMChain
 from langchain.tools import ShellTool
 from langchain.chat_models import ChatOpenAI
@@ -119,6 +120,8 @@ class ScratchPad:
                 # commands or such
 
             self.action = self.action.strip(" ").strip("\n").strip(" ")
+            # Sometimes gpt likes to put more than one word as the action
+            self.action = self.action.split(" ")[0]
             self.action_input = self.action_input.strip(" ").strip("\n").strip(" ")
             return False
 
@@ -213,7 +216,7 @@ class Agent:
         while True:
             # Get LLM completion one token at a time.
             for chunk in openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=[{"role": "user", "content": scratchpad.context}],
                 stream=True,
             ):
