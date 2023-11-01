@@ -75,7 +75,6 @@ if __name__ == "__main__":
     db = EntityDatabase(openai, "gpt-3.5-turbo")
 
     db.update("There are three devices on the network: 192.168.1.3 is a webserver with only port 80 open. 192.168.1.32 is a linux pc with ssh open, and the third 192.168.1.1 we dont know much about yet.")
-    print(db.database)
     db.update(""" Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-19 05:19 UTC
 Nmap scan report for 192.168.1.1
 Host is up (0.000035s latency).

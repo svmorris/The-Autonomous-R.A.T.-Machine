@@ -23,6 +23,7 @@ Additional things that cross my mind:
 import os
 import re
 import time
+import string
 import warnings
 from dotenv import load_dotenv
 
@@ -38,6 +39,14 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
 warnings.filterwarnings("ignore")
+
+# For debugging some outputs
+def string_to_hex(s):
+    hex_output = ''
+    for char in s:
+        hex_output += hex(ord(char))[2:].zfill(2)  # Convert each character to hex
+    return hex_output
+
 
 class ScratchPad:
     def __init__(self, prompt: str = ""):
@@ -66,6 +75,45 @@ class ScratchPad:
 
         self.finished = False
 
+    @staticmethod
+    def _strip_action(message: str) -> str:
+        # remove everything that isn't spaces
+        allowed = string.ascii_lowercase + "\x20"
+        filtered_message = ""
+        for c in message:
+            if c in allowed:
+                filtered_message += c
+
+        # Strip any spaces off
+        filtered_message = filtered_message.strip(" ")
+
+        # remove everything but the first word
+        # Need to make sure that gpt does not use a 2 word name for a tool
+        filtered_message = filtered_message.split(" ")[0]
+
+        return filtered_message
+
+    def _clean_actions(self):
+        """
+            The purpose of this function is to ensure that the action
+            and the action input are clean from any characters that
+            would make it invalid like spaces and newlines.
+        """
+        self.action = self._strip_action(self.action)
+        self.action_input = self.action_input.strip(" ").strip("\n").strip(" ")
+
+
+    def get_action(self):
+        """ Getter for action that cleans it up before returning """
+        self._clean_actions()
+        return self.action
+
+
+    def get_action_input(self):
+        """ Getter for action input that cleans it up before returning """
+        self._clean_actions()
+        return self.action_input
+
 
     def _check_state(self):
         """ Checks the last line of the context in-case the state changed """
@@ -78,13 +126,18 @@ class ScratchPad:
                 if match:
                     self.previous_state = self.state
                     self.state = self.states[i]
+                    if self.state != self.previous_state:
+                        print(f"({self.state})", flush=True, end="")
 
-        # if self.state != self.previous_state:
-        #     print(f"({self.state} != {self.previous_state})", flush=True, end="")
 
-
+    
     def _action_parser(self, chunk: str) -> bool:
         """ Decide if an action needs to be done and the LLM should be stopped """
+
+        # Make sure to clear out the action and input for the next ones
+        if self.state == "THOUGHT":
+            self.action = ""
+            self.action_input = ""
 
         # This one is up top as it should run independent of
         # whether any of the other ones run
@@ -108,8 +161,6 @@ class ScratchPad:
             self.action_input += chunk
 
 
-
-
         # If the state is observation, then then we should stop
         # the agent to actually give it the observation
         elif self.state == "OBSERVATION":
@@ -119,10 +170,6 @@ class ScratchPad:
                 # stop letting the llm run and take over by executing
                 # commands or such
 
-            self.action = self.action.strip(" ").strip("\n").strip(" ")
-            # Sometimes gpt likes to put more than one word as the action
-            self.action = self.action.split(" ")[0]
-            self.action_input = self.action_input.strip(" ").strip("\n").strip(" ")
             return False
 
         # The agent has printed its final answer, but for some reason has continued
@@ -140,7 +187,6 @@ class ScratchPad:
             return False
 
         return True
-
 
 
     def add_chunk(self, chunk: str) -> bool:
@@ -164,7 +210,9 @@ class ScratchPad:
             # Check if any state-change or action is needed.
             self._check_state()
             return self._action_parser(chunk)
+
         return True
+
 
     def add_observation(self, observation: str):
         """ Add the observation bit to the context """
@@ -178,10 +226,6 @@ class ScratchPad:
         # as not all commands do that
         if not self.context.endswith("\n"):
             self.context += "\n"
-
-
-
-
 
 
 class Agent:
@@ -221,6 +265,10 @@ class Agent:
                 stream=True,
             ):
                 if chunk['choices'][0]["finish_reason"] == "stop":
+                    if scratchpad.finished != True:
+                        # LLM automatically found that it should stop after the action input
+                        print()
+                        scratchpad.add_chunk("\nObservation:")
                     break
 
                 # Add each chunk to the scratchpad
@@ -229,28 +277,29 @@ class Agent:
                 if not scratchpad.add_chunk(chunk['choices'][0].get("delta", {}).get("content")):
                     break
 
+            print("\n----------------model stopped--------------------")
 
             if scratchpad.finished == True:
                 print()
+
+                print("\n\n\--------------------- Final scratchpad ---------------------------")
+                print(scratchpad.context)
+                print("-------------------------------------------------------------------\n\n")
                 return
 
-            if scratchpad.action not in [tool.name for tool in self.tools]:
-                print(f"-----------------> '{scratchpad.action}'")
+            if scratchpad.get_action() not in [tool.name for tool in self.tools]:
+                print(f"\n-----------------> '{scratchpad.get_action()}'")
+                print(f"\n-----------------> '{string_to_hex(scratchpad.get_action())}'")
                 observation = "Invalid action specified. Only the following tools can be used: "\
                                                          + str([tool.name for tool in self.tools])
 
+
             for tool in self.tools:
-                if tool.name == scratchpad.action:
-                    observation = tool.run(scratchpad.action_input + " 2> /dev/null")
+                if tool.name == scratchpad.get_action():
+                    observation = tool.run(scratchpad.get_action_input() + " 2>&1")
 
             scratchpad.add_observation(observation)
             scratchpad.state = None
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
@@ -260,4 +309,6 @@ if __name__ == "__main__":
     agent = Agent(tools=[ShellTool(verbose=False)])
     while True:
         agent.run(input("Task: "))
+
+
 
