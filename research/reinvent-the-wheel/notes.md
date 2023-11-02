@@ -1,3 +1,8 @@
+# Interesting behaviour
+
+An odd thing I found, most commonly with gpt-4 is that sometimes it will attempt to refuse the task, either due to it being unethical or due to it thinking its incapable of affecting anything in the real world. It then says that just to show how it would theoretically be done, it will still show the commands. However, it puts them in the correct format, the code gets run, and then the model just continues on with the task as if it never refused to do it.
+
+
 # Random thoughts
 
 

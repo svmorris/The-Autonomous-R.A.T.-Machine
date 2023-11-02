@@ -38,6 +38,7 @@ from langchain.tools import ShellTool
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
+VERBOSE = True
 warnings.filterwarnings("ignore")
 
 # For debugging some outputs
@@ -47,6 +48,9 @@ def string_to_hex(s):
         hex_output += hex(ord(char))[2:].zfill(2)  # Convert each character to hex
     return hex_output
 
+def printv(*args, **kwargs):
+    if(VERBOSE):
+        print(*args, **kwargs)
 
 class ScratchPad:
     def __init__(self, prompt: str = ""):
@@ -73,6 +77,7 @@ class ScratchPad:
         self.action = ""
         self.action_input = ""
 
+        self.final_answer = ""
         self.finished = False
 
     @staticmethod
@@ -127,7 +132,7 @@ class ScratchPad:
                     self.previous_state = self.state
                     self.state = self.states[i]
                     if self.state != self.previous_state:
-                        print(f"({self.state})", flush=True, end="")
+                        printv(f"({self.state})", flush=True, end="")
 
 
     
@@ -142,6 +147,7 @@ class ScratchPad:
         # This one is up top as it should run independent of
         # whether any of the other ones run
         if self.state == "FINAL ANSWER":
+            self.final_answer += chunk
             self.finished = True
 
 
@@ -171,6 +177,7 @@ class ScratchPad:
                 # commands or such
 
             return False
+
 
         # The agent has printed its final answer, but for some reason has continued
         # talking. In this case we should just stop it.
@@ -204,7 +211,7 @@ class ScratchPad:
         """
         # Ignore any empty chunks that could sometimes happen
         if chunk is not None:
-            print(chunk, flush=True, end="")
+            printv(chunk, flush=True, end="")
             self.context += chunk
 
             # Check if any state-change or action is needed.
@@ -220,7 +227,7 @@ class ScratchPad:
         self.context += " "
         self.context += observation
         # print so the chunk print looks consistent
-        print(" ", observation, flush=True)
+        printv(" ", observation, flush=True)
 
         # Just make sure there is a newline at the end,
         # as not all commands do that
@@ -229,9 +236,10 @@ class ScratchPad:
 
 
 class Agent:
-    def __init__(self, tools: list, system: str=""):
+    def __init__(self, tools: list, system: str="", verbose=True):
         self.tools = tools
         self.p_system = self._get_system_prompt(system)
+        VERBOSE = verbose
 
 
     def _get_system_prompt(self, user_system: str) -> str:
@@ -252,8 +260,18 @@ class Agent:
         return formatted_p_system
 
 
-    def run(self, task: str):
-        """ Run the agent to execute a specific task """
+    def run(self, task: str, return_full=False) -> str:
+        """
+            Run the agent to execute a specific task
+            
+            Args:
+                - task (string): the task that the agent needs to execute
+                - return_full: True if the entire context should be returned,
+                               False if only the final answer should be returned
+            
+            Returns: Final Answer or entire context of the agent.
+        """
+
         prompt = f"{self.p_system}\nTask: {task}"
         scratchpad = ScratchPad(prompt)
 
@@ -267,7 +285,7 @@ class Agent:
                 if chunk['choices'][0]["finish_reason"] == "stop":
                     if scratchpad.finished != True:
                         # LLM automatically found that it should stop after the action input
-                        print()
+                        printv()
                         scratchpad.add_chunk("\nObservation:")
                     break
 
@@ -277,19 +295,20 @@ class Agent:
                 if not scratchpad.add_chunk(chunk['choices'][0].get("delta", {}).get("content")):
                     break
 
-            print("\n----------------model stopped--------------------")
+            printv("\n----------------model stopped--------------------")
 
             if scratchpad.finished == True:
-                print()
+                printv()
 
-                print("\n\n\--------------------- Final scratchpad ---------------------------")
-                print(scratchpad.context)
-                print("-------------------------------------------------------------------\n\n")
-                return
+                printv("\n\n\--------------------- Final scratchpad ---------------------------")
+                printv(scratchpad.context)
+                printv("-------------------------------------------------------------------\n\n")
+                # Leave the execution loop
+                break
 
             if scratchpad.get_action() not in [tool.name for tool in self.tools]:
-                print(f"\n-----------------> '{scratchpad.get_action()}'")
-                print(f"\n-----------------> '{string_to_hex(scratchpad.get_action())}'")
+                printv(f"\n-----------------> '{scratchpad.get_action()}'")
+                printv(f"\n-----------------> '{string_to_hex(scratchpad.get_action())}'")
                 observation = "Invalid action specified. Only the following tools can be used: "\
                                                          + str([tool.name for tool in self.tools])
 
@@ -300,6 +319,12 @@ class Agent:
 
             scratchpad.add_observation(observation)
             scratchpad.state = None
+
+        # Post execution
+        if (return_full):
+            return scratchpad.context
+        return scratchpad.final_answer
+
 
 
 if __name__ == "__main__":
