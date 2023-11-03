@@ -20,7 +20,7 @@ from typing import Tuple
 class ExecutionSandbox:
     """ A thread to run the sandbox environment """
 
-    def __init__(self, sandbox="podman", container="autonomous-rat-machine"):
+    def __init__(self, sandbox="podman", container="rat-machine-image"):
         self.sandbox = sandbox
         self.container_thread = None
         self.container_name = container
