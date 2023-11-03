@@ -129,6 +129,38 @@ class ExecutionSandbox:
         self.run("rm /stop-flag")
         self.container_thread = None
 
+
+    @staticmethod
+    def _command_filter(command: str) -> str:
+        """
+           The language model does not know that its in a docker container
+           where it already has root (but the sudo command does not exist)
+           and where it cannot interact with commands like apt.
+
+           This function is supposed to be a simple filter to clean up some
+           common errors from commands by GPT. It obviously won't solve
+           everything, but some errors are so common I might as well plan
+           for them.
+
+           This method is also not foolproof for chaining commands, however,
+           I don't think that any of the filtered commands would be in chains
+           very often.
+        """
+        command = command.strip("\n")
+        command = command.strip(" ")
+
+        # Make sure we remove any sudo's bc we are already root
+        # and the command does not exist in the sandbox.
+        if command.startswith("sudo "):
+            command = command[5:].strip(" ")
+
+        # Make sure that apt is not waiting for input
+        if command.startswith("apt") and " -y " not in command:
+            command += " -y"
+
+        return command
+
+
     def run(self, command: str) -> Tuple[str,str,bool]:
         """
             Run a command in the sandbox
@@ -149,6 +181,9 @@ class ExecutionSandbox:
         if self.container_thread == None:
             print("Starting sandbox")
             self.start_sandbox()
+
+        # Fix some common command issues
+        command = self._command_filter(command)
 
         try:
             with subprocess.Popen(
@@ -179,7 +214,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            stdout, stderr, ran = sandbox.run(input(">>"))
+            stdout, stderr, ran = sandbox.run(input(">> "))
             if ran:
                 print(stdout)
                 print(stderr)
