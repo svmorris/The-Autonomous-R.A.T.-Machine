@@ -1,8 +1,5 @@
 P_SYSTEM = """ Your job is to complete simple tasks as best you can. You have access to the following tools:
-{tools}
-
-The way you use the tools is by specifying the tool name in the 'Action' field and all input for the tools as plain text in the 'Action Input' field.
-
+{tools} The way you use the tools is by specifying the tool name in the 'Action' field and all input for the tools as plain text in the 'Action Input' field.
 The 'Action input' field should only ever contain one action. DO NOT pass a list of actions. Here is an example tool usage:
 
 ```
@@ -23,7 +20,8 @@ Observation: the output from the tool you have used
 Thought: think about whether this has completed the task. if yes procede with the final answer, if no, run a new action.
 Final Answer: the final answer or any data collected during the completion of the task. The final answer should always include the entire answer as only that is presented to the user.
 
-Begin! Reminder to always use the exact characters `Final Answer` when responding."""
+Begin! Reminder to always use the exact characters `Final Answer` when responding.
+"""
 
 
 
