@@ -31,6 +31,10 @@ class ExecutionSandbox:
 
         self._assert_command_exists(self.sandbox)
 
+        # Extra description stuff
+        self.name = "terminal"
+        self.description = "Run shell commands on this Linux machine."
+
 
 
     @staticmethod
@@ -102,6 +106,7 @@ class ExecutionSandbox:
                 [
                     self.sandbox,
                     "run",
+                    "--cap-add=NET_RAW",
                     "--name",
                     self.running_name,
                     "--rm",
@@ -161,7 +166,7 @@ class ExecutionSandbox:
         return command
 
 
-    def run(self, command: str) -> Tuple[str,str,bool]:
+    def run(self, command: str) -> str:
         """
             Run a command in the sandbox
 
@@ -169,13 +174,9 @@ class ExecutionSandbox:
                 - command (string): the command to run
 
             Returns:
-                - stdout
-                - stderr
-                - bool: true if command ran, false if it didn't
-                        If this is false, then neither stdout or error
-                        should have anything as it means the command didn't
-                        even have a chance to run and there is an error with
-                        the sandbox.
+                - string: output of the command or a string explaining that it didn't work.
+                          As we are working with language models, the string explaining that
+                          the terminal does not work is actually better than just crashing.
         """
 
         if self.container_thread == None:
@@ -197,15 +198,15 @@ class ExecutionSandbox:
                         command # TODO: make sure this is not exploitable
                         ],
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
                     ) as process:
 
-                stdout, stderr = process.communicate()
-                return (stdout.decode(), stderr.decode(), True)
+                stdout, _ = process.communicate()
+                return str(stdout.decode())
 
         except Exception as err: # pylint: disable=broad-exception-caught
             print(f"Failed to run command with error: {err}")
-            return ("", "", False)
+            return f"Terminal failed to run with error: {err}"
 
 
 
@@ -214,12 +215,8 @@ if __name__ == "__main__":
 
     try:
         while True:
-            stdout, stderr, ran = sandbox.run(input(">> "))
-            if ran:
-                print(stdout)
-                print(stderr)
-            else:
-                print("Failed to run command")
+            stdout = sandbox.run(input(">> "))
+            print(stdout)
 
     except KeyboardInterrupt:
         sandbox.kill_sandbox()

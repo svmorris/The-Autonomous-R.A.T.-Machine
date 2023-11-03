@@ -33,8 +33,10 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from enum import Enum, auto
 
 from prompts import P_SYSTEM
+from shelltool import ExecutionSandbox
+
+
 from langchain.chains import LLMChain
-from langchain.tools import ShellTool
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
@@ -235,6 +237,9 @@ class ScratchPad:
             self.context += "\n"
 
 
+
+
+
 class Agent:
     def __init__(self, tools: list, system: str="", verbose=True):
         self.tools = tools
@@ -315,7 +320,7 @@ class Agent:
 
             for tool in self.tools:
                 if tool.name == scratchpad.get_action():
-                    observation = tool.run(scratchpad.get_action_input() + " 2>&1")
+                    observation = tool.run(scratchpad.get_action_input())
 
             scratchpad.add_observation(observation)
             scratchpad.state = None
@@ -331,7 +336,7 @@ if __name__ == "__main__":
     load_dotenv()
     openai.organization = os.getenv("OPENAI_ORGANIZATION")
     openai.api_key = os.getenv("OPENAI_API_KEY")
-    agent = Agent(tools=[ShellTool(verbose=False)])
+    agent = Agent(tools=[ExecutionSandbox()])
     while True:
         agent.run(input("Task: "))
 

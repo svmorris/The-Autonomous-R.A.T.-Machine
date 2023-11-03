@@ -23,9 +23,7 @@ Observation: the output from the tool you have used
 Thought: think about whether this has completed the task. if yes procede with the final answer, if no, run a new action.
 Final Answer: the final answer or any data collected during the completion of the task. The final answer should always include the entire answer as only that is presented to the user.
 
-Begin! Reminder to always use the exact characters `Final Answer` when responding.
-Task:
-"""
+Begin! Reminder to always use the exact characters `Final Answer` when responding."""
 
 
 
