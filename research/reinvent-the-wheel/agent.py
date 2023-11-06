@@ -12,12 +12,7 @@ Further I think its important to add a debugging mechanism
 to manually accept commands before they are being run
 
 Additional things that cross my mind:
-
-- Maybe this llm also includes the entity memory stuff
-- Also commands should run in a podman instance for added safety
-- If a command output is too long, we could get an llm to summarise it
 - make plans?
-
 """
 
 import os

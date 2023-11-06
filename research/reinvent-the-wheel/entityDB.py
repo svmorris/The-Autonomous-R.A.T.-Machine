@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 
 class EntityDatabase:
-    def __init__(self, openai_instance: openai, model: str):
+    def __init__(self, openai_instance, model: str):
         self.model = model
         self.openai = openai_instance
         self.database = ""
