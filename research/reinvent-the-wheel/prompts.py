@@ -12,6 +12,7 @@ Observation: Linux rpi 6.5.7-arch1-1 #1 SMP PREEMPT_DYNAMIC Tue, 10 Oct 2023 21:
 ```
 
 ALWAYS use the following format:
+Context: In some cases there is some context to help you complete the task. (not always)
 Task: the input tasks that you must complete 
 Thought: you should always think about what to do
 Action: name of the tool that you want to use
@@ -22,7 +23,7 @@ Final Answer: the final answer or any data collected during the completion of th
 
 Begin! Reminder to always use the exact characters `Final Answer` when responding.
 """
-
+# NOTE: the context stuff might ruin things
 
 
 ENTITY_DB_WRITE_EXAMPLE = """Your job is to make and update an entity based knowledge base for a penetration testing team.
@@ -48,6 +49,8 @@ Remember, respond only with the updated database and nothing else!
 New message from team: {message}
 """
 
+# NOTE: no example should be used if the knowledge base + the
+#       other prompt is more than the allowed context size.
 ENTITY_DB_WRITE_NO_EXAMPLE = """ Here is the current knowledge base:
 ```
 {database}
@@ -57,7 +60,6 @@ Add whatever information you can extract from the following message:
 {message}
 ```
 NOTE: Respond with ONLY the updated database
-# scan network
 """
 
 

@@ -17,6 +17,8 @@ import threading
 import subprocess
 from typing import Tuple
 
+from debug import prints
+
 class ExecutionSandbox:
     """ A thread to run the sandbox environment """
 
@@ -101,13 +103,25 @@ class ExecutionSandbox:
     def _container_thread(self):
         """ A threaded function that runs the container """
         try:
+            # TODO: There is a bug here I'm struggling to Fix
+            #       If you run the podman without the --network
+            #       option than its IP address will be in a different
+            #       range as the host computer. This might confuse the
+            #       system not knowing what subnet to scan.
+
+            #       If however you do add this host, some bug on my computer
+            #       does not allow me to run tools like nmap.
+
+            #       I was hoping to fix this by creating a separate macvlan
+            #       for the rat machine but I am struggling to do it as of now.
             subprocess.run(
                 [
                     self.sandbox,
                     "run",
                     "--cap-add=NET_RAW",
-                    "--network",
-                    "host",
+                    "--cap-add=NET_ADMIN",
+                    # "--network",
+                    # "rat-sandbox-macvlan",
                     "--name",
                     self.running_name,
                     "--rm",
@@ -181,7 +195,7 @@ class ExecutionSandbox:
         """
 
         if self.container_thread == None:
-            print("Starting sandbox")
+            prints("Starting sandbox")
             self.start_sandbox()
 
         # Fix some common command issues

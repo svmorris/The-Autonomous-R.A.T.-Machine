@@ -262,7 +262,7 @@ class Agent:
         return formatted_p_system
 
 
-    def run(self, task: str, return_full=False) -> str:
+    def run(self, task: str, context: str="N/A", return_full=False) -> str:
         """
             Run the agent to execute a specific task
             
@@ -274,7 +274,7 @@ class Agent:
             Returns: Final Answer or entire context of the agent.
         """
 
-        prompt = f"{self.p_system}\nTask: {task}"
+        prompt = f"{self.p_system}\nContext: {context}\nTask: {task}"
         scratchpad = ScratchPad(prompt)
 
         while True:
@@ -325,7 +325,7 @@ class Agent:
         # Post execution
         if (return_full):
             return scratchpad.context
-        return scratchpad.final_answer
+        return scratchpad.final_answer.strip(":").strip() # This is not clean, but not sure what else to do
 
 
 
