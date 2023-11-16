@@ -239,7 +239,7 @@ class Agent:
     def __init__(self, tools: list, system: str="", verbose=True):
         self.tools = tools
         self.p_system = self._get_system_prompt(system)
-        VERBOSE = verbose
+        globals()['VERBOSE'] = verbose
 
 
     def _get_system_prompt(self, user_system: str) -> str:

@@ -85,3 +85,19 @@ Give the relevant context from your knowledge database to help the other system 
 
 IMPORTANT: Respond ONLY with the relevant information and nothing else.
 """
+
+# NOTE: if the agent is capable of doing other things, this should be updated
+TASKER_INITIAL_TASKLIST = """Your job is to help break down a goal into smaller executable tasks for your client.
+Your client only has access to a basic terminal interface so make sure all tasks are achievable. The goal should be broken down into small easy tasks. DO NOT make the tasks complex.
+
+Below is an example interaction. ALWAYS follow this format for task list!
+```
+client goal: Scan the local network and identify all devices
+Your response:
+1. get your current ip address on the network
+2. 
+
+Your client has the following goal: {goal}
+
+Make a todolist for your client:
+"""

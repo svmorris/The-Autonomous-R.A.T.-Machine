@@ -36,7 +36,6 @@ class ExecutionSandbox:
         self.description = "Run shell commands on this Linux machine."
 
 
-
     @staticmethod
     def _assert_command_exists(command):
         try:
@@ -107,6 +106,8 @@ class ExecutionSandbox:
                     self.sandbox,
                     "run",
                     "--cap-add=NET_RAW",
+                    "--network",
+                    "host",
                     "--name",
                     self.running_name,
                     "--rm",
