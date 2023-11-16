@@ -18,22 +18,22 @@ Additional things that cross my mind:
 import os
 import re
 import time
+import openai
 import string
 import warnings
 from dotenv import load_dotenv
-
-import openai
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-
 from enum import Enum, auto
+
+
 
 from prompts import P_SYSTEM
 from shelltool import ExecutionSandbox
-
+from debug import prints
 
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 VERBOSE = True
 warnings.filterwarnings("ignore")
@@ -48,6 +48,8 @@ def string_to_hex(s):
 def printv(*args, **kwargs):
     if(VERBOSE):
         print(*args, **kwargs)
+    else:
+        prints(*args, **kwargs)
 
 class ScratchPad:
     def __init__(self, prompt: str = ""):
