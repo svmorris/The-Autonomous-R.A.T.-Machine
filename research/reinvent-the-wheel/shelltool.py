@@ -188,9 +188,11 @@ class ExecutionSandbox:
             command += " -y"
 
         if command.startswith("nmap"):
+            # Ping commands need raw packets so that they work within the docker container
             if "-sn" in command:
-                # Ping commands need raw packets so that they work within the docker container
                 command = command.replace("-sn", "-PO -sn")
+            elif "-sP" in command:
+                command = command.replace("-sP", "-PO -sP")
 
         # Need to get the host IP addresses
         if command in ("ip a", "ifconfig"):
