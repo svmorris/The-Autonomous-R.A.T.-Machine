@@ -120,8 +120,9 @@ class ExecutionSandbox:
                     "run",
                     "--cap-add=NET_RAW",
                     "--cap-add=NET_ADMIN",
-                    "--network",
-                    "host",
+                    # "--network",
+                    # "host",
+                    # "--add-host=host_ip_address:host-gateway",
                     "--name",
                     self.running_name,
                     "--rm",
@@ -151,7 +152,7 @@ class ExecutionSandbox:
 
 
     @staticmethod
-    def _command_filter(command: str) -> str:
+    def _command_filter(command: str) -> (str, bool):
         """
            The language model does not know that its in a docker container
            where it already has root (but the sudo command does not exist)
@@ -165,7 +166,15 @@ class ExecutionSandbox:
            This method is also not foolproof for chaining commands, however,
            I don't think that any of the filtered commands would be in chains
            very often.
-        """
+
+           Returns:
+               - str: filtered command
+               - bool: if true, needs to be run on host instead of container
+                       NOTE: this must only be true on commands known to be safe
+
+           """
+        run_on_host = False
+
         command = command.strip("\n")
         command = command.strip(" ")
 
@@ -178,7 +187,16 @@ class ExecutionSandbox:
         if command.startswith("apt") and " -y " not in command:
             command += " -y"
 
-        return command
+        if command.startswith("nmap"):
+            if "-sn" in command:
+                # Ping commands need raw packets so that they work within the docker container
+                command = command.replace("-sn", "-PO -sn")
+
+        # Need to get the host IP addresses
+        if command in ("ip a", "ifconfig"):
+            run_on_host = True
+
+        return command, run_on_host
 
 
     def run(self, command: str) -> str:
@@ -194,24 +212,37 @@ class ExecutionSandbox:
                           the terminal does not work is actually better than just crashing.
         """
 
-        if self.container_thread == None:
+        if self.container_thread is None:
             prints("Starting sandbox")
             self.start_sandbox()
 
         # Fix some common command issues
-        command = self._command_filter(command)
+        command, run_on_host = self._command_filter(command)
 
         try:
+            command_arr: list = []
+            # If the command needs to be run on host, then do not include the
+            # sandbox arguments
+            if run_on_host:
+                command_arr = command.split(" ")
+                # Need to make sure this is a list
+                if isinstance(command_arr, list) is False:
+                    command_arr = [command_arr]
+
+            # Include the sandbox arguments
+            else:
+                command_arr = [
+                            self.sandbox,
+                            "exec",
+                            "-it",
+                            self.running_name,
+                            "bash",
+                            "-c",
+                            command
+                            ]
+
             with subprocess.Popen(
-                    [
-                        self.sandbox,
-                        "exec",
-                        "-it",
-                        self.running_name,
-                        "bash",
-                        "-c",
-                        command # TODO: make sure this is not exploitable
-                        ],
+                    command_arr,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     ) as process:
