@@ -18,7 +18,8 @@ Additional things that cross my mind:
 import os
 import re
 import time
-import openai
+from openai import OpenAI
+
 import string
 import warnings
 from dotenv import load_dotenv
@@ -238,8 +239,9 @@ class ScratchPad:
 
 
 class Agent:
-    def __init__(self, tools: list, system: str="", verbose=True):
+    def __init__(self, openai_client, tools: list, system: str="", verbose=True):
         self.tools = tools
+        self.client = openai_client
         self.p_system = self._get_system_prompt(system)
         globals()['VERBOSE'] = verbose
 
@@ -279,12 +281,12 @@ class Agent:
 
         while True:
             # Get LLM completion one token at a time.
-            for chunk in openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[{"role": "user", "content": scratchpad.context}],
-                stream=True,
-            ):
-                if chunk['choices'][0]["finish_reason"] == "stop":
+            for chunk in self.client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[{"role": "user", "content": scratchpad.context}],
+                        stream=True
+                    ):
+                if chunk.choices[0].finish_reason == "stop":
                     if scratchpad.finished != True:
                         # LLM automatically found that it should stop after the action input
                         printv()
@@ -294,7 +296,7 @@ class Agent:
                 # Add each chunk to the scratchpad
                 # The scratchpad processes the information and decides
                 # if the bot needs to be stopped for some reason.
-                if not scratchpad.add_chunk(chunk['choices'][0].get("delta", {}).get("content")):
+                if not scratchpad.add_chunk(chunk.choices[0].delta.content):
                     break
 
             printv("\n----------------model stopped--------------------")
@@ -331,9 +333,8 @@ class Agent:
 
 if __name__ == "__main__":
     load_dotenv()
-    openai.organization = os.getenv("OPENAI_ORGANIZATION")
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    agent = Agent(tools=[ExecutionSandbox()])
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    agent = Agent(client, tools=[ExecutionSandbox()])
     while True:
         agent.run(input("Task: "))
 

@@ -1,16 +1,16 @@
 " This file is an experiment to use a couple language models as an entity database "
 
 import os
-import openai
 import prompts
+from openai import OpenAI
 from dotenv import load_dotenv
 
 
 
 class EntityDatabase:
-    def __init__(self, openai_instance, model: str):
+    def __init__(self, openai_client, model: str):
         self.model = model
-        self.openai = openai_instance
+        self.client = openai_client
         self.database = ""
 
 
@@ -18,7 +18,7 @@ class EntityDatabase:
         message_with_example = prompts.ENTITY_DB_WRITE_EXAMPLE
         message_without_example = ""
         message = message_with_example.format(database=self.database, message=message)
-        output = self.openai.ChatCompletion.create(
+        output = self.client.ChatCompletion.create(
                 model=self.model,
                 messages = [{"role": "user", "content": message}]
                 )
@@ -35,7 +35,7 @@ class EntityDatabase:
         query_template = prompts.ENTITY_DB_QUERY
         message = query_template.format(database=self.database, query=query)
 
-        output = self.openai.ChatCompletion.create(
+        output = self.client.ChatCompletion.create(
                 model=self.model,
                 messages = [{"role": "user", "content": message}]
                 )
@@ -54,7 +54,7 @@ class EntityDatabase:
         query_template = prompts.ENTITY_DB_RELEVANT_CONTEXT
         message = query_template.format(database=self.database, query=query)
 
-        output = self.openai.ChatCompletion.create(
+        output = self.client.ChatCompletion.create(
                 model=self.model,
                 messages = [{"role": "user", "content": message}]
                 )
@@ -70,9 +70,9 @@ class EntityDatabase:
 
 if __name__ == "__main__":
     load_dotenv()
-    openai.organization = os.getenv("OPENAI_ORGANIZATION")
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    db = EntityDatabase(openai, "gpt-3.5-turbo")
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    
+    db = EntityDatabase(client, "gpt-3.5-turbo")
 
     db.update("There are three devices on the network: 192.168.1.3 is a webserver with only port 80 open. 192.168.1.32 is a linux pc with ssh open, and the third 192.168.1.1 we dont know much about yet.")
     db.update(""" Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-19 05:19 UTC
