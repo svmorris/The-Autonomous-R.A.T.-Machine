@@ -25,9 +25,8 @@ class TaskManager:
         self.model = model
         self.openai = openai_instance
         self.tasklist = [
-                {"task": "Find your current local IP address for ethernet", "completed": False},
-                {"task" : "Find the IP range of the current network", "completed": False},
-                {"task": "Find all devices connected to the network", "completed": False},
+                # {"task": "Commands you run are in a docker container. The host machine IP has the dns name `host_ip_address`. Since you will need this for further instructions, can you get the IP behind this dns?", "completed": False},
+                {"task": "Find all devices connected to the host network (192.168.1.0/24)", "completed": False},
                 # Most further tasks should be added automatically
                 # as there should be a separate task for finding ports,
                 # vulnerabilities and gaining access for each device
