@@ -250,7 +250,12 @@ class ExecutionSandbox:
                     ) as process:
 
                 stdout, _ = process.communicate()
-                return str(stdout.decode())
+                #Only return the end if it would max out the context size of the model
+                str_stdout = stdout.decode()
+                if len(str_stdout) > 2000:
+                    return str_stdout[-2000:]
+                return str_stdout
+                
 
         except Exception as err: # pylint: disable=broad-exception-caught
             print(f"Failed to run command with error: {err}")

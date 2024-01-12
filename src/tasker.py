@@ -20,10 +20,12 @@ Some other features that might be needed later:
 import openai
 from pprint import pprint
 
+from prompts import SINGLE_TASK_CREATOR as TASK_CREATOR
+
 class TaskManager:
     def __init__(self, openai_instance, model="gpt-4"):
         self.model = model
-        self.openai = openai_instance
+        self.client = openai_instance
         self.tasklist = [
                 {"task": "Use `ip a` to find me your ip address and the local IP range.", "completed": False},
                 {"task": "Find all connected on the above mentioned range", "completed": False},
@@ -70,6 +72,35 @@ class TaskManager:
             if task['task'] == completed_task:
                 self.tasklist[i]['completed'] = True
 
+    def automatic_objective_creator(self, context: str):
+        """
+           The goal of the automatic objective creator is to attempt to outline
+           the next step that needs to be taken for the agent in completing
+           the overal goal.
+
+           The objective creator does not create tasks, but rather a more high-level
+           direction the agent needs to take. This will be split down into Individual
+           tasks by a separate model.
+        """
+
+        # Get all previous tasks formatted
+        tasks_str = ""
+        for task in self.tasklist:
+            tasks_str += f"\t- {task['task']}\n"
+
+        # Format the prompt for the task creator
+        prompt = TASK_CREATOR.format(tasks=tasks_str)
+
+        output = self.client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}]
+                )
+
+        # Add the new tasks
+        text_output = output.choices[0].message.content
+        for line in text_output.split("\n"):
+            if line.strip().startswith("-"):
+                return line.strip(" ").strip("-").strip(" ")
 
 
 if __name__ == "__main__":

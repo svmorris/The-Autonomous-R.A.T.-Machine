@@ -43,24 +43,29 @@ while True:
         
     print("-----------full context-------------")
     print(database.database)
-    print("------------------------------------")
         
     context = ""
     if database.database != "":
         context = database.get_context(task)
 
 
+    print("-----------full task-list-----------")
+    for list_item in task_manager.tasklist:
+        mark = "[✓]" if list_item['completed'] else "[ ]"
+        print(f"{mark} {list_item['task']}")
+
+
     print("--------------task------------------")
     print(f"Context: {context}")
     print(f"Task: {task}")
-    print("------------------------------------")
 
     
     output = agent.run(task, context=context)
     database.update(output)
     task_manager.mark_next_completed()
+    task_manager.automatic_task_creator(output)
 
     print("--------------output----------------")
     print(output)
-    print("------------------------------------\n\n")
+    print("================================================================================\n\n")
     print(database.database)
