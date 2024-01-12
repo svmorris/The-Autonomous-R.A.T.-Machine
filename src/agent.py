@@ -31,11 +31,6 @@ from prompts import P_SYSTEM
 from shelltool import ExecutionSandbox
 from debug import prints
 
-from langchain.chains import LLMChain
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-
 VERBOSE = True
 warnings.filterwarnings("ignore")
 

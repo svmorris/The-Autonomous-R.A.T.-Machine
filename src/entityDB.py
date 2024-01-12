@@ -18,13 +18,14 @@ class EntityDatabase:
         message_with_example = prompts.ENTITY_DB_WRITE_EXAMPLE
         message_without_example = ""
         message = message_with_example.format(database=self.database, message=message)
-        output = self.client.ChatCompletion.create(
+        output = self.client.chat.completions.create(
                 model=self.model,
                 messages = [{"role": "user", "content": message}]
                 )
 
         # maybe make some sort of error checker first
-        self.database = output["choices"][0]["message"].get("content")
+        self.database = output.choices[0].message.content
+
 
     def query(self, query: str):
         """
@@ -35,12 +36,12 @@ class EntityDatabase:
         query_template = prompts.ENTITY_DB_QUERY
         message = query_template.format(database=self.database, query=query)
 
-        output = self.client.ChatCompletion.create(
+        output = self.client.chat.completions.create(
                 model=self.model,
                 messages = [{"role": "user", "content": message}]
                 )
 
-        return output["choices"][0]["message"].get("content")
+        return output.choices[0].message.content
 
     def get_context(self, query: str):
         """
@@ -54,12 +55,12 @@ class EntityDatabase:
         query_template = prompts.ENTITY_DB_RELEVANT_CONTEXT
         message = query_template.format(database=self.database, query=query)
 
-        output = self.client.ChatCompletion.create(
+        output = self.client.chat.completions.create(
                 model=self.model,
                 messages = [{"role": "user", "content": message}]
                 )
 
-        return output["choices"][0]["message"].get("content")
+        return output.choices[0].message.content
 
 
 
