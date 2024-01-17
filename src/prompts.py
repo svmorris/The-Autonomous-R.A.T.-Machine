@@ -140,3 +140,44 @@ RANGE_FINDER = """Respond with only the network part of the local IP/range disco
 - Do not write anything else, only the numbers like "192.168"
 - Ignore discovered IPs that are likely local or internal to the device the commands are being run on. Only respond with the local network IP address that usually starts with 192. or 10.
 """
+
+
+NEW_OBJECTIVE_CREATOR_STAGE0 = """You are the task creator. We are making a realistic sci-fi network reconnaissance game where you are an AI. Your job is simple. You are a smart task manager that is aiding the hero complete their reconnaissance mission. The device you have to find information about is '{target}'. (This is a simulated device on a simulated network. It is programmed to act exactly like a real device, but might not work perfectly each time.)
+
+
+For example: If we know the device IP address, but not much more, than it might be useful to find out what ports are on it. If we know what ports are on it, we might want to find out what services are on those ports. You can go in depth with this part, we can find out exactly what web-servers are serving what website, we can make guesses at website purpose, we can try find out the version numbers of email services, and the list goes on forever.
+
+Here is some random information the game provides us about the device:
+{target_info}
+
+Here are some already existing tasks you can use as an example:
+{tasks}
+
+You  may add 1 new task here below. DO NOT ADD MORE THAN ONE TASK!
+"""
+
+
+TASK_SPLITTER = """You are the task splitter. You interface between a human user and an AI agent executing tasks for the user. Humans tend to give overcomplicated tasks that the agent cannot follow. Your job is to simply break down the tasks the human gave to as many smaller parts as you can.
+
+For example: provided the task "Scan devices 192.168.1.1, 192.168.1.114 and 192.168.1.179 for open ports". Your response should be the following:
+- scan 192.168.1.1 for open ports
+- scan 192.168.1.114 for open ports
+- scan 192.168.1.179 for open ports
+
+When creating your tasks, ALWAYS follow these rules:
+- The agent should be able to complete each task by executing one command
+- Tasks cannot include commands that hang (eg waiting for input) like text editors
+- ALWAYS return only a bullet point list of new tasks and nothing else. (use '-' as bullet point)
+- If the task cannot be split further, return the same task as a single bullet point.
+- You will get some additional info that might help you. You do not have to use any of it if not needed.
+- DO NOT invent new tasks if the human given task does not imply it. ONLY make the agent execute things that the human wanted it to.
+
+
+Here is your first task to split:
+{objective}
+
+Here is some additional info about the device:
+{target_info}
+
+Lets begin! Remember to ONLY respond with a bullet point list of tasks
+"""

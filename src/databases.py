@@ -31,6 +31,7 @@ class Database():
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.target_list: list[dict] = []
         self.target_counter = 0
+        self.namespace = os.getenv('DB_NAMESPACE', None)
 
         pinecone.init(
             api_key=os.getenv("PINECONE_KEY"),
@@ -45,7 +46,7 @@ class Database():
         # exists as long as this program is running,
         # no matter how many times the database class
         # is initialized
-        if os.getenv('DB_NAMESPACE') is None:
+        if self.namespace is None:
             self.namespace = "runtime-"+str(int(time.time())) 
             os.environ['DB_NAMESPACE'] = self.namespace
             prints(f"Running on pinecone namespace '{self.namespace}'")
@@ -73,7 +74,7 @@ class Database():
         return response.choices[0].message.content
 
 
-    def add_new_data(self, data: str):
+    def update(self, data: str):
         """
             Provided the output of an agents runtime, create a summary
             of device information discovered and upload it to the vector
@@ -97,6 +98,7 @@ class Database():
             )
 
         self.update_targetlist(data)
+        prints("targets: ", self.target_list)
 
     def update_targetlist(self, data: str):
         """
@@ -154,6 +156,9 @@ class Database():
             In case of there being very few targets, we make sure that
             the same target is not hit again within 30 seconds.
         """
+
+        print(self.target_counter)
+        print(len(self.target_list))
         self.target_counter = (self.target_counter + 1) % len(self.target_list)
         target = self.target_list[self.target_counter]
 
@@ -238,7 +243,7 @@ Final Answer: Open ports for each machine are as follows:
 
 if __name__ == "__main__":
     db = Database()
-    db.add_new_data(sample_agent_data)
+    db.update(sample_agent_data)
     time.sleep(30)
     print(db.get_context("Find out what website is running on 1.1"))
     while True:

@@ -18,19 +18,17 @@ Additional things that cross my mind:
 import os
 import re
 import time
-from openai import OpenAI
-
 import string
 import warnings
-from dotenv import load_dotenv
+from openai import OpenAI
 from enum import Enum, auto
+from dotenv import load_dotenv
 
-
-
+from debug import prints
 from prompts import P_SYSTEM
 from shelltool import ExecutionSandbox
-from debug import prints
 
+load_dotenv()
 VERBOSE = True
 warnings.filterwarnings("ignore")
 
@@ -234,9 +232,9 @@ class ScratchPad:
 
 
 class Agent:
-    def __init__(self, openai_client, tools: list, system: str="", verbose=True):
+    def __init__(self, tools: list, system: str="", verbose=True):
         self.tools = tools
-        self.client = openai_client
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.p_system = self._get_system_prompt(system)
         globals()['VERBOSE'] = verbose
 
