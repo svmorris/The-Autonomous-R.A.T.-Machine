@@ -33,3 +33,17 @@ The program will only work if `./src/debug.py` is running in a separate window. 
 #### 4. Run the agent
 
 In its current state, the main file of the agent is the `hacker.ipynb` notebook in the `./src` folder. In the future there will be a proper main file, but for now this is the only way to use the agent.
+
+
+
+
+# Ideas to implement later
+
+- For work, I created a better way of handing model memory. Instead of the entity DB that exists in this project, there could be a separate model that summarizes all information
+collected during a run of the agent, and then gets stored in a standard vector database. This seems to give a lot of well condensed information.
+
+
+- The above + splitting the database + Tasker based on full context
+I think the best way to go about this would be a combination of three new things. Firstly, we replace the entity database with a vector one. Data in the vector database will be only summaries of agents running. (well have to tell the summariser to focus on entities though)
+Secondly, a separate database will hold all know targets. This could probably be done with just regex on the range.
+Finally, the tasker would have a different way of creating new tasks. Instead of based on the last command, it would go one target at a time, get all relevant info about it and come up with a new task based on the saved info. Due to the way the vector database works, this could lead to some tasks being repeated, but if something gets repeated its more likely to be shown to the tasker anyway.

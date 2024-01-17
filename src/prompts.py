@@ -115,3 +115,8 @@ Here are all the already existing tasks:
 
 You may add the new tasks below. Make sure the objective is simple!
 """
+
+# Create a new task based on not the last command, but
+# rather the complete context
+CONTEXT_BASED_TASK_CREATOR = """
+"""

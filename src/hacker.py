@@ -27,23 +27,24 @@ time.sleep(1)
 
 
 task_manager = TaskManager(client)
-database = EntityDatabase(client, "gpt-3.5-turbo")
+database = EntityDatabase(client, "gpt-4")
 agent = Agent(client, tools=[ExecutionSandbox()], verbose=False)
 
 
 
 while True:
     task = task_manager.get_next()
-    print('task: ',task , type(task))
-    print(f"'{task}'")
 
     # ran out of tasks
     if task.strip() == "":
+        print("```")
+        print(database.database)
+        print("```")
         break
-        
+
     print("-----------full context-------------")
     print(database.database)
-        
+
     context = ""
     if database.database != "":
         context = database.get_context(task)
@@ -63,7 +64,7 @@ while True:
     output = agent.run(task, context=context)
     database.update(output)
     task_manager.mark_next_completed()
-    task_manager.automatic_task_creator(output)
+    # task_manager.automatic_objective_creator(output)
 
     print("--------------output----------------")
     print(output)
