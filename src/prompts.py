@@ -120,3 +120,23 @@ You may add the new tasks below. Make sure the objective is simple!
 # rather the complete context
 CONTEXT_BASED_TASK_CREATOR = """
 """
+
+
+
+SUMMARIZER = """You are the summarizer. You are an automation tool whose job is to summarize the output of a ReAct based agent conducting a penetration test in order for it to be easier processed for reporting.
+
+You will get the full runtime of an agent executing some command. Summarize the data implementing the following rules:
+- Use condensed language to get more information with less text
+- Always focus on describing information we know about specific IP addresses.
+- Always refer directly refer to a device by its IP address/specific port and DO NOT used implied referrals like 'that', 'it', etc.
+- Focus on describing information we know about each IP address (target)
+"""
+
+
+
+RANGE_FINDER = """Respond with only the network part of the local IP/range discovered in this agents runtime (text below). ALWAYS follow the following rules:
+
+- ONLY respond with the first two numbers in the IP address
+- Do not write anything else, only the numbers like "192.168"
+- Ignore discovered IPs that are likely local or internal to the device the commands are being run on. Only respond with the local network IP address that usually starts with 192. or 10.
+"""

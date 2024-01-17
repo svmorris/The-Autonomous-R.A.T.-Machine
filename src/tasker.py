@@ -29,6 +29,7 @@ class TaskManager:
         self.tasklist = [
                 {"task": "Use `ip a` to find me your ip address and the local IP range.", "completed": False},
                 {"task": "Find all connected on the above mentioned range", "completed": False},
+                {"task": "Find open ports for all discovered devices on the network", "completed": False},
                 # Most further tasks should be added automatically
                 # as there should be a separate task for finding ports,
                 # vulnerabilities and gaining access for each device

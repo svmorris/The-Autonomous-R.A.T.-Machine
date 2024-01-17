@@ -62,6 +62,7 @@ while True:
 
     
     output = agent.run(task, context=context)
+    print("--> agnet")
     database.update(output)
     task_manager.mark_next_completed()
     # task_manager.automatic_objective_creator(output)

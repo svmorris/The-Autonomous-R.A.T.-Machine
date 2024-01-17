@@ -47,3 +47,6 @@ collected during a run of the agent, and then gets stored in a standard vector d
 I think the best way to go about this would be a combination of three new things. Firstly, we replace the entity database with a vector one. Data in the vector database will be only summaries of agents running. (well have to tell the summariser to focus on entities though)
 Secondly, a separate database will hold all know targets. This could probably be done with just regex on the range.
 Finally, the tasker would have a different way of creating new tasks. Instead of based on the last command, it would go one target at a time, get all relevant info about it and come up with a new task based on the saved info. Due to the way the vector database works, this could lead to some tasks being repeated, but if something gets repeated its more likely to be shown to the tasker anyway.
+
+
+- Simple error check: Both when the scratchpad doesnt catch commands and when the model decides it cannot complete some "hacking task" no commands are being run. A simple way to re-try such commands would be to check for no commands being run during an agent execution, rephrase the task slightly, and re-run the agent
