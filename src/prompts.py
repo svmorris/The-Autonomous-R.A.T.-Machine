@@ -150,7 +150,7 @@ For example: If we know the device IP address, but not much more, than it might 
 Here is some random information the game provides us about the device:
 {target_info}
 
-Here are some already existing tasks you can use as an example:
+Here are some already completed tasks you can use as an example:
 {tasks}
 
 You  may add 1 new task here below. DO NOT ADD MORE THAN ONE TASK!

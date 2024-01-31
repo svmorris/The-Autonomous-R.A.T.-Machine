@@ -26,6 +26,14 @@ load_dotenv()
 
 
 class Database():
+    _instance = None
+
+    def __new__(cls):
+        """ Make class signleton """
+        if cls._instance is None:
+            cls._instance = super(Database, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
         """ Set things up """
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -129,6 +137,8 @@ class Database():
         # IP regex
         ips = re.findall(rf'\b{re.escape(ip_range)}\.\d{{1,3}}\.\d{{1,3}}(?:/\d{{1,2}})?\b', data)
         for ip in ips:
+            # Remove any range identifiers from the IP
+            ip = ip.split("/")[0]
             if ip not in [t['ip'] for t in self.target_list]:
                 self.target_list.append({
                     "ip": ip,
