@@ -292,15 +292,12 @@ class Agent:
                 if not scratchpad.add_chunk(chunk.choices[0].delta.content):
                     break
 
-            printv("\n----------------model stopped--------------------")
+            # printv("\n----------------model stopped--------------------")
 
             if scratchpad.finished == True:
                 printv()
 
-                printv("\n\n\--------------------- Final scratchpad ---------------------------")
                 printv(scratchpad.context)
-                printv("-------------------------------------------------------------------\n\n")
-                # Leave the execution loop
                 break
 
             if scratchpad.get_action() not in [tool.name for tool in self.tools]:

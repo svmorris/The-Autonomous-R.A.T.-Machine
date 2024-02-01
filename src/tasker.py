@@ -20,20 +20,22 @@ exploiting the targets.
 The task manager will keep track of all completed and non-completed tasks.
 """
 import os
+import re
 import time
 from debug import prints
 from openai import OpenAI
 from databases import Database
 from dotenv import load_dotenv
 
-from prompts import NEW_OBJECTIVE_CREATOR_STAGE0
+from prompts import RANGE_FINDER
 from prompts import TASK_SPLITTER
+from prompts import NEW_OBJECTIVE_CREATOR_STAGE0
 
 load_dotenv()
 
 
 
-class TaskManager:
+class OldTaskManager:
     _instance = None
     def __new__(cls):
         """ Make class signleton """
@@ -187,6 +189,8 @@ class TaskManager:
             self.add_task_end(task)
 
 
+
+
 class TargetList:
     """Class to handle the task list.
 
@@ -201,7 +205,7 @@ class TargetList:
             targets (list): A list of target dictionaries.
         """
         self.targets = targets
-        self.timeout_seconds = os.getenv("TARGET_TIMEOUT", 30)
+        self.timeout_seconds = int(os.getenv("TARGET_TIMEOUT", 30))
 
     def get_target_document(self, target_name: str) -> dict:
         """Retrieve a target document by its name. """
@@ -214,6 +218,12 @@ class TargetList:
         """Add a new target to the list. """
         new_target = {"target": target_name, "last_hit": last_hit, "tasks": []}
         self.targets.append(new_target)
+
+    def add_if_unique(self, target_name: str):
+        """ Add a new target only if its unique """
+        doc = self.get_target_document(target_name)
+        if not doc:
+            self.add_target(target_name)
 
     def add_task(self, target_name: str, task_description: str) -> None:
         """Add a task to a specific target. """
@@ -245,11 +255,11 @@ class TargetList:
                 break
         return incomplete_tasks
 
-    def set_last_hit_time(self, target_name: str, l_time=int(time.time())):
+    def set_last_hit_time(self, target_name: str):
         """ Set the last_hit time of a target to the current time """
         for target in self.targets:
             if target['target'] == target_name:
-                target['last_hit'] = l_time
+                target['last_hit'] = int(time.time())
 
 
     def get_oldest_target(self) -> str:
@@ -283,12 +293,9 @@ class TargetList:
         for target in self.targets:
             if target['target'] == target_name:
                 for task in target['tasks']:
-                    bullet = [bullet_completed if task['completed'] else bullet_uncomplete]
+                    bullet = bullet_completed if task['completed'] else bullet_uncomplete
                     formatted += f"\t{bullet} {task['task']}\n"
 
-
-        print('formatted: ',formatted , type(formatted))
-        assert len(formatted) > 1, "No Such target for task formatter (or maybe there are just no tasks?)"
         return formatted
 
     def target_needs_timeout(self, target_name: str) -> bool:
@@ -298,21 +305,22 @@ class TargetList:
             return True
         return False
 
+    def get_targets(self) -> list:
+        """ Return a list of target names """
+        names = []
+        for target in self.targets:
+            names.append(target['target'])
+        return names
 
 
 
 
-
-
-
-
-
-class NewTaskManager:
+class TaskManager:
     _instance = None
     def __new__(cls):
         """ Make class signleton """
         if cls._instance is None:
-            cls._instance = super(NewTaskManager, cls).__new__(cls)
+            cls._instance = super(TaskManager, cls).__new__(cls)
         return cls._instance
 
 
@@ -333,6 +341,11 @@ class NewTaskManager:
             ]
         }])
         self.db = Database()
+        self.target_range = None
+        # Targets that should not be added to the Target
+        # These are generally any devices that belong to the host
+        # computer or are gateways, etc
+        self.blacklisted_targets = set()
 
 
 
@@ -345,11 +358,16 @@ class NewTaskManager:
             will be later split up by the task creator.
         """
 
+        # If the target has not had any tasks previously
+        # than use the general tasks as example
+        example_tasks = self.target_list.formatted_task_list(target)
+        if not example_tasks:
+            example_tasks = self.target_list.formatted_task_list("general")
 
         prompt = NEW_OBJECTIVE_CREATOR_STAGE0.format(
             target=target,
             target_info=target_info,
-            tasks=self.target_list.formatted_task_list()
+            tasks=example_tasks
         )
 
         response = self.client.chat.completions.create(
@@ -406,6 +424,58 @@ class NewTaskManager:
             self.target_list.add_task(target_name, task)
 
 
+    def _find_ip_addresses(self, data: str):
+        """
+            Use regex to pick out all IP addresses from a block of text
+            that match a specific range and are not blacklisted.
+        """
+        assert self.target_range is not None, "Target IP range has not been set!"
+
+        addresses = set()
+        # IP regex
+        ips = re.findall(rf'\b{re.escape(self.target_range)}\.\d{{1,3}}\.\d{{1,3}}(?:/\d{{1,2}})?\b', data)
+        for target_name in ips:
+            # Remove any range identifiers from the IP
+            target_name = target_name.split("/")[0]
+            if target_name not in self.blacklisted_targets:
+                addresses.add(target_name)
+
+        return list(addresses)
+
+    def update_targetlist(self, data: str):
+        """
+            Take all IP addresses that match the target range from
+            a block of text and add it to the target list.
+        """
+        for target_name in self._find_ip_addresses(data):
+            self.target_list.add_if_unique(target_name)
+
+    def update_target_blacklist(self, data: str):
+        """
+            Take all IP addresses that match the target range from
+            a block of text and add it to the target blacklist.
+
+            IPs added here will not be added to target list in the future.
+        """
+        for target_name in self._find_ip_addresses(data):
+            self.blacklisted_targets.add(target_name)
+
+
+    def set_target_range(self, text: str):
+        """
+            Set the target range for the IP address finder. Only IPs within
+            The range set here will be considered targets.
+        """
+        range_or_ip = self.client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": RANGE_FINDER},
+                {"role": "user", "content": text},
+            ]
+        ).choices[0].message.content.strip().split(" ")[0]
+        self.target_range = ".".join(range_or_ip.split(".")[:2])
+
+
     def get_next(self, check_timeout=True) -> tuple[str,str]:
         """
             Get the next task for the agent to execute.
@@ -421,17 +491,21 @@ class NewTaskManager:
                task details (str)
         """
 
-        # Check if all "general" tasks are complete
+        # If there are incomplete tasks for general, then do them
+        # before any other target
         incomplete_tasks = self.target_list.get_incomplete_tasks("general")
         if incomplete_tasks:
-            return "general", incomplete_tasks[0]['task']
+            target_name = "general"
+        else:
+            # If there aren't in general, then get the target
+            # that hasn't been hit in the longest time
+            target_name = self.target_list.get_oldest_target()
 
-        # Get incomplete tasks
-        target_name = self.target_list.get_oldest_target()
-
-        # Run the task creator to make new tasks if there aren't any
-        # This will just do nothing if there are already incomplete tasks
-        self._automatic_task_creator(target_name)
+        # If the target is not general, then run the automatic task creator
+        # This will create new tasks if there aren't any, but will do nothing
+        # if there are still un-complete tasks
+        if target_name is not "general":
+            self._automatic_task_creator(target_name)
 
         # Check timeout should only be false if we are just getting
         # the name of this last task to set it as complete
@@ -459,21 +533,4 @@ class NewTaskManager:
         target, task = self.get_next(check_timeout=False)
         self.target_list.mark_task_completed(target, task)
         self.target_list.set_last_hit_time(target)
-
-
-
-
-class TaskManagerByTarget:
-    """ Group tasks by target """
-
-    def __init__(self):
-
-        self = [
-                {"task": "Use `ip a` to find me your ip address and the local IP range.", "completed": False},
-                {"task": "Use nmap to find all connected on the above mentioned range", "completed": False},
-        ]
-
-
-
-
 

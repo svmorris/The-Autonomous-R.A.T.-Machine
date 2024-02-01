@@ -9,6 +9,7 @@ RUN touch /stop-flag
 RUN apt-get install nmap -y
 RUN apt-get install arp-scan -y
 RUN apt-get install dnsrecon -y
+RUN apt-get install dnsutils -y
 RUN apt-get install net-tools -y
 RUN apt-get install iputils-ping -y
 

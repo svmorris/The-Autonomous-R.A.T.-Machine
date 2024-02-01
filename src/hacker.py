@@ -7,6 +7,7 @@ import os
 import time
 
 from agent import Agent
+from tasker import OldTaskManager
 from tasker import TaskManager
 from databases import Database
 from shelltool import ExecutionSandbox
@@ -22,32 +23,42 @@ task_manager = TaskManager()
 agent = Agent(tools=[ExecutionSandbox()], verbose=False)
 
 
-hard_coded_tasks=True
+i = 0
 while True:
-    print("-----------full task-list-----------")
-    for list_item in task_manager.task_list:
-        mark = "[✓]" if list_item['completed'] else "[ ]"
-        print(f"{mark} {list_item['task']}")
+    print("------------All targets-------------")
+    [print("- ", x) for x in task_manager.target_list.get_targets()]
+    print("------------Next target-------------")
+    # Get the next target and task
+    target, task = task_manager.get_next()
+    print(f"Target: {target}")
+    print(task_manager.target_list.formatted_task_list(target, checkbox=True))
 
-
-    task = task_manager.get_next()
-
-    if task_manager.get_num_uncompleted() == 0:
-        hard_coded_tasks=False
-        task_manager.automatic_task_creator()
-        continue
-
-    context = database.get_context(task)
 
     print("-----------next task----------------")
+    context = database.get_context(task)
     print(f"Context: {context}")
     print(f"Task: {task}")
 
-    output = agent.run(task, context=context, return_full=True)
-    database.update(output)
-    task_manager.mark_next_completed()
+    # The first task only tries to find the local IP range.
+    # Its enough if we just return the final answer here,
+    # which makes it easier for the range finder to set the
+    # correct range.
+    if i == 0:
+        output = agent.run(task, context=context, return_full=True)
+        task_manager.set_target_range(output)
+        task_manager.update_target_blacklist(output)
+        print("----------Target blacklist----------")
+        print("range: ", task_manager.target_range)
+        [print("- ", x) for x in task_manager.blacklisted_targets]
 
-    # In the beginning we need to wait for the database to update
-    if hard_coded_tasks:
-        print("Waiting for database...")
-        time.sleep(30)
+
+    else:
+        # For other tasks, get full return for summarizer
+        output = agent.run(task, context=context, return_full=True)
+        # Target list does not need to be updated on the first command
+        # as nothing it adds is useful
+        task_manager.update_targetlist(output)
+
+    database.update(output)
+    task_manager.auto_mark_completed()
+    i += 1

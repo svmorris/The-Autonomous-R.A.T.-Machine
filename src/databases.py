@@ -19,7 +19,6 @@ from langchain.text_splitter import CharacterTextSplitter
 
 from debug import prints
 from prompts import SUMMARIZER
-from prompts import RANGE_FINDER
 
 
 load_dotenv()
@@ -37,8 +36,6 @@ class Database():
     def __init__(self):
         """ Set things up """
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.target_list: list[dict] = []
-        self.target_counter = 0
         self.namespace = os.getenv('DB_NAMESPACE', None)
 
         pinecone.init(
@@ -55,7 +52,7 @@ class Database():
         # no matter how many times the database class
         # is initialized
         if self.namespace is None:
-            self.namespace = "runtime-"+str(int(time.time())) 
+            self.namespace = "runtime-"+str(int(time.time()))
             os.environ['DB_NAMESPACE'] = self.namespace
             prints(f"Running on pinecone namespace '{self.namespace}'")
 
@@ -86,8 +83,7 @@ class Database():
         """
             Provided the output of an agents runtime, create a summary
             of device information discovered and upload it to the vector
-            database. Also find all new devices in that data to add to
-            the target list.
+            database.
         """
         summary = self._create_summary(data)
 
@@ -105,48 +101,6 @@ class Database():
                 namespace=self.namespace
             )
 
-        self.update_targetlist(data)
-        prints("targets: ", self.target_list)
-
-    def update_targetlist(self, data: str):
-        """
-            Takes input of any type of string and finds IP addresses
-            within our (simplified version of a) range to add to the target list.
-
-            The range in this case is the first two parts of the first
-            IP address in the target list. If there is no device in it yet,
-            then it is found with the rangefinder model.
-
-            NOTE: It takes approximately 30 seconds to update the database
-                  after adding new data. During this time, new information
-                  will not be returned in queries.
-        """
-
-        if not self.target_list:
-            range_or_ip = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": RANGE_FINDER},
-                    {"role": "user", "content": data},
-                ]
-            ).choices[0].message.content.strip().split(" ")[0]
-            ip_range = ".".join(range_or_ip.split(".")[:2])
-        else:
-            ip_range = ".".join(self.target_list[0]["ip"].split(".")[:2])
-
-        # IP regex
-        ips = re.findall(rf'\b{re.escape(ip_range)}\.\d{{1,3}}\.\d{{1,3}}(?:/\d{{1,2}})?\b', data)
-        for ip in ips:
-            # Remove any range identifiers from the IP
-            ip = ip.split("/")[0]
-            if ip not in [t['ip'] for t in self.target_list]:
-                self.target_list.append({
-                    "ip": ip,
-                    "finished": False,
-                    "last_hit": int(time.time())
-                })
-
-
     def get_context(self, text: str) -> str:
         """ Gets any related information to `text` from the vector database """
         docs = self.docsearch.similarity_search(text)
@@ -155,30 +109,6 @@ class Database():
             context += f"{d.page_content}\n"
         context += "```"
         return context
-
-
-    def get_next_target(self) -> str:
-        """
-            Due to the database taking some time before new information
-            shows up on it, we constantly rotate through all discovered
-            targets to make sure we are always working on a new one.
-
-            In case of there being very few targets, we make sure that
-            the same target is not hit again within 30 seconds.
-        """
-
-        print(self.target_counter)
-        print(len(self.target_list))
-        self.target_counter = (self.target_counter + 1) % len(self.target_list)
-        target = self.target_list[self.target_counter]
-
-        # If there has not yet been 30 seconds since the target was hit
-        while int(time.time()) - target["last_hit"] < 30:
-            prints(f"---> Timeout on target {target['ip']}")
-            time.sleep(5)
-
-        self.target_list[self.target_counter]['last_hit'] = int(time.time())
-        return target["ip"]
 
 
 
