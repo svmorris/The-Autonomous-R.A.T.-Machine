@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 
 from debug import prints
 from prompts import P_SYSTEM
+from prompts import HALTING_PROBLEM
 from shelltool import ExecutionSandbox
 
 load_dotenv()
@@ -256,16 +257,37 @@ class Agent:
 
         return formatted_p_system
 
+    def check_command_halts(self, command: str) -> bool:
+        """Solve the halting problem"""
+        messages = [
+                {"role": "system", "content": HALTING_PROBLEM},
+                {"role": "user", "content": command}
+                ]
+
+        response = self.client.chat.completions.create(
+                model="gpt-4",
+                messages=messages
+                )
+
+        response_text = response.choices[0].message.content
+
+        for word in response_text.split(" "):
+            if "yes" in word:
+                return True
+            if "no" in word:
+                return False
+        return False
+
 
     def run(self, task: str, context: str="N/A", return_full=False) -> str:
         """
             Run the agent to execute a specific task
-            
+
             Args:
                 - task (string): the task that the agent needs to execute
                 - return_full: True if the entire context should be returned,
                                False if only the final answer should be returned
-            
+
             Returns: Final Answer or entire context of the agent.
         """
 
@@ -309,7 +331,11 @@ class Agent:
 
             for tool in self.tools:
                 if tool.name == scratchpad.get_action():
-                    observation = tool.run(scratchpad.get_action_input())
+                    # Make sure the command can be run
+                    if self.check_command_halts(scratchpad.get_action_input()):
+                        observation = "Command was blocked as it will likely hang the terminal and not stop without user interaction. Only run commands that will return on their own!"
+                    else:
+                        observation = tool.run(scratchpad.get_action_input())
 
             scratchpad.add_observation(observation)
             scratchpad.state = None

@@ -7,6 +7,7 @@ RUN touch /stop-flag
 
 # Recon tools
 RUN apt-get install nmap -y
+RUN apt-get install openvas -y
 RUN apt-get install arp-scan -y
 RUN apt-get install dnsrecon -y
 RUN apt-get install dnsutils -y

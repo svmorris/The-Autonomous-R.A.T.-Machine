@@ -146,6 +146,7 @@ NEW_OBJECTIVE_CREATOR_STAGE0 = """You are the task creator. We are making a real
 
 
 For example: If we know the device IP address, but not much more, than it might be useful to find out what ports are on it. If we know what ports are on it, we might want to find out what services are on those ports. You can go in depth with this part, we can find out exactly what web-servers are serving what website, we can make guesses at website purpose, we can try find out the version numbers of email services, and the list goes on forever.
+NOTE: If the previous few tasks focus on one area of the target or on using one tool, then switch and do something else.
 
 Here is some random information the game provides us about the device:
 {target_info}
@@ -182,3 +183,24 @@ Here is some additional info about the device:
 Lets begin! Remember to ONLY respond with a bullet point list of tasks
 """
 
+
+HALTING_PROBLEM = """Your job is to decide whether a command will halt or ask for input, or stop in any other way. Commands are being sent by a user for the server to run, but commands that don't eventually stop on their own could crash the server. Your job is to decide whether the command will stop  or not.
+
+Respond only with "yes" for command halting or "no" for the command being safe.
+
+Here are a few examples
+user:
+nc -nlvp 3000
+your answer:
+yes
+user:
+vim /var/log/README
+your answer:
+yes
+user:
+nmap 192.168.1.1
+your answer:
+no
+
+Lets begin! Remember to only answer with "yes" or "no"
+"""
