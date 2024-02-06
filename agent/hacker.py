@@ -7,9 +7,9 @@ import os
 import time
 
 from agent import Agent
-from tasker import OldTaskManager
 from tasker import TaskManager
 from databases import Database
+from c2communication import Report
 from shelltool import ExecutionSandbox
 
 # Just ensure that things are properly killed
@@ -21,10 +21,12 @@ time.sleep(1)
 database = Database()
 task_manager = TaskManager()
 agent = Agent(tools=[ExecutionSandbox()], verbose=False)
+report = Report()
 
 
 i = 0
 while True:
+    report.run()
     print("------------All targets-------------")
     [print("- ", x) for x in task_manager.target_list.get_targets()]
     print("------------Next target-------------")

@@ -56,7 +56,7 @@ class Database():
             os.environ['DB_NAMESPACE'] = self.namespace
             prints(f"Running on pinecone namespace '{self.namespace}'")
 
-        self.index_name = "autonomous-rat-machine"
+        self.index_name = os.environ.get("PINECONE_INDEX")
         self.docsearch = Pinecone.from_existing_index(
             self.index_name,
             self.embeddings,
