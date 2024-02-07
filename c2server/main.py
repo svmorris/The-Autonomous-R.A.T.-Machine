@@ -27,7 +27,6 @@ def rat_authentication(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         token = request.cookies.get('client_id')
-        print('token: ',token , type(token))
         if not db.is_document(token):
             return make_response("Unauthorized", 401)
         return f(*args, **kwargs)

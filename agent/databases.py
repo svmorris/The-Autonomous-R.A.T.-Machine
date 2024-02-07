@@ -57,11 +57,19 @@ class Database():
             prints(f"Running on pinecone namespace '{self.namespace}'")
 
         self.index_name = os.environ.get("PINECONE_INDEX")
-        self.docsearch = Pinecone.from_existing_index(
-            self.index_name,
-            self.embeddings,
-            namespace=self.namespace
-        )
+
+        # pinecone often has issues
+        while True:
+            try:
+                self.docsearch = Pinecone.from_existing_index(
+                    self.index_name,
+                    self.embeddings,
+                    namespace=self.namespace
+                )
+                break
+            except pinecone.core.client.exceptions.ServiceException:
+                print("Pinecone service down, retrying in 2 seconds...")
+                time.sleep(2)
 
     def _create_summary(self, data) -> str:
         """ Create an entity-focused summary of an agents runtime """
@@ -94,16 +102,30 @@ class Database():
 
         documents = text_splitter.split_text(summary)
 
-        self.docsearch.from_texts(
-                documents,
-                self.embeddings,
-                index_name=self.index_name,
-                namespace=self.namespace
-            )
+        while True:
+            try:
+                self.docsearch.from_texts(
+                        documents,
+                        self.embeddings,
+                        index_name=self.index_name,
+                        namespace=self.namespace
+                    )
+                break
+            except pinecone.core.client.exceptions.ServiceException:
+                print("Pinecone service down, retrying in 2 seconds...")
+                time.sleep(2)
+
 
     def get_context(self, text: str) -> str:
         """ Gets any related information to `text` from the vector database """
-        docs = self.docsearch.similarity_search(text)
+        while True:
+            try:
+                docs = self.docsearch.similarity_search(text)
+                break
+            except pinecone.core.client.exceptions.ServiceException:
+                print("Pinecone service down, retrying in 2 seconds...")
+                time.sleep(2)
+
         context = "```\n"
         for d in docs:
             context += f"{d.page_content}\n"

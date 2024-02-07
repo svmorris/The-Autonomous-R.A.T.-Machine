@@ -62,5 +62,5 @@ while True:
         task_manager.update_targetlist(output)
 
     database.update(output)
-    task_manager.auto_mark_completed()
+    task_manager.auto_mark_completed(target)
     i += 1

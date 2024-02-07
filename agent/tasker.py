@@ -22,6 +22,7 @@ The task manager will keep track of all completed and non-completed tasks.
 import os
 import re
 import time
+import json
 from debug import prints
 from openai import OpenAI
 from databases import Database
@@ -60,7 +61,7 @@ class TargetList:
 
     def add_target(self, target_name: str, last_hit=0) -> None:
         """Add a new target to the list. """
-        new_target = {"target": target_name, "last_hit": last_hit, "tasks": []}
+        new_target = {"target": target_name, "last_hit": last_hit, "tasks": [], "stopped": False}
         self.targets.append(new_target)
 
     def add_if_unique(self, target_name: str):
@@ -108,15 +109,20 @@ class TargetList:
 
     def get_oldest_target(self) -> str:
         """ Return the target_name of the target with the smallest "last_hit" variable """
-        smallest = int(time.time())
+        smallest = int(time.time()-1)
         smallest_target_name = ""
         for target in self.targets:
-            if target['last_hit'] < smallest and target['target'] != "general": 
-                smallest = target['last_hit']
-                smallest_target_name = target['target']
+            if target['stopped'] == False:
+                if target['last_hit'] < smallest and target['target'] != "general":
+                    smallest = target['last_hit']
+                    smallest_target_name = target['target']
 
+        # If no targets are found
         if not smallest_target_name:
-            assert False, "There are no targets!!!"
+            print("Agent ran out of targets! Initiating new network scan...")
+            self.add_task("general", f"Use nmap to find all connected on the above mentioned range //({time.time()})")
+            return "general"
+
 
         return smallest_target_name
 
@@ -157,13 +163,21 @@ class TargetList:
         return names
 
 
-    def remote_target(self, target_to_remove):
+    def stop_target(self, target_to_remove):
         """ Remove a specific target from the targetlist """
         new_list = []
         for target in self.targets:
-            if target['target'] != target_to_remove:
-                new_list.append(target)
-        self.targets = new_list
+            if target['target'] == target_to_remove:
+                target['stopped'] = True
+
+    def export_json(self) -> str:
+        return json.dumps(self.targets)
+
+    def set_stopped_state(self, target_to_set: str, state: bool):
+        """ Set a targets stopped state """
+        for target in self.targets:
+            if target['target'] == target_to_set:
+                target['stopped'] = state
 
 
 
@@ -192,7 +206,8 @@ class TaskManager:
                     "task": "Use nmap to find all connected on the above mentioned range",
                     "completed": False
                 },
-            ]
+            ],
+            "stopped": False
         }])
         self.db = Database()
         self.target_range = None
@@ -304,7 +319,7 @@ class TaskManager:
         targets = self.target_list.get_targets()
         for blacklisted_target in self.blacklisted_targets:
             if blacklisted_target in targets:
-                self.target_list.remote_target(blacklisted_target)
+                self.target_list.stop_target(blacklisted_target)
 
 
     def update_targetlist(self, data: str):
@@ -387,15 +402,9 @@ class TaskManager:
         return target_name, incomplete_tasks[0]['task']
 
 
-    def auto_mark_completed(self):
-        """
-            Mark task as completed and update last_hit time
-
-            This function will automatically figure out what task needs to be marked
-            as completed based on what task is next.
-        """
-
-        target, task = self.get_next(check_timeout=False)
+    def auto_mark_completed(self, target):
+        """ Mark the next task as completed on the target """
+        task = self.target_list.get_incomplete_tasks(target)[0]['task']
         self.target_list.mark_task_completed(target, task)
         self.target_list.set_last_hit_time(target)
 
