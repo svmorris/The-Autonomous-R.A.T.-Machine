@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C2 {{data['instance']}}</title>
+    <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+    <ul class="ul-center">
+        {% for target in data['target_list'] %}
+                <li class="li-block">
+                    {{target['target']}}
+                    <div class="align-right">
+                        <button>report</button>
+                        <button>pause</button>
+                        <button>▼</button>
+                    </div>
+                </li>
+
+                <li class="target_details li-block">
+                    <p>Tasks running on target: </p>
+                    <ul class="ul-left">
+                        {% for task in target['tasks'] %}
+                            <li class="li-list flex-row"> 
+                                <label>
+                                    <input type="checkbox" disabled {{ "checked" if task['completed'] else ""}}>
+                                </label>
+                                <span class="task-text">{{task['task']}}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C2 Home</title>
+    <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+    <ul class="ul-center">
+        {% for mapping in mappings %}
+            <a href="/i/{{mapping['instance']}}/">
+                <li class="li-hover li-block"> Instance '{{ mapping['instance'][:5] }}' created at: {{ mapping['created'] }} <div class="align-right">{{ "(newest)" if mapping['instance'] == mappings[0]['instance'] else ""}}</div></li>
+            </a>
+        {% endfor %}
+    </ul>
+</body>
+</html>

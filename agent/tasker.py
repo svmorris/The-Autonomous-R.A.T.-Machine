@@ -109,7 +109,7 @@ class TargetList:
 
     def get_oldest_target(self) -> str:
         """ Return the target_name of the target with the smallest "last_hit" variable """
-        smallest = int(time.time()-1)
+        smallest = int(time.time()+1)
         smallest_target_name = ""
         for target in self.targets:
             if target['stopped'] == False:

