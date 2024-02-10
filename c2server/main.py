@@ -107,9 +107,34 @@ class InstancePage(Resource):
         return response
 
 
+class ToggleTargetStoppedState(Resource):
+    @staticmethod
+    @admin_auth
+    def get(instance: str, target: str):
+        data, status_code = client_api.toggle_target_blacklist(instance, target)
+        response = make_response(data)
+        response.content_type = "application/json"
+        response.status_code = status_code
+        return response
+
+
+class GenerateReport(Resource):
+    @staticmethod
+    @admin_auth
+    def get(instance: str, target: str):
+        data, status_code = client_api.generate_report(instance, target)
+        response = make_response(data)
+        response.content_type = "application/json"
+        response.status_code = status_code
+        return response
+
 
 api.add_resource(HomePage, "/")
 api.add_resource(InstancePage, "/i/<instance>/", "/i/<instance>")
+api.add_resource(GenerateReport, "/api/v0/report/<instance>/<target>")
+api.add_resource(ToggleTargetStoppedState, "/api/v0/pause/<instance>/<target>")
+
+
 api.add_resource(RATRegisterClient, "/api/v0/rat/register")
 api.add_resource(RATTargetList, "/api/v0/rat/targetlist")
 

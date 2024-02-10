@@ -4,6 +4,7 @@ in this file to not clutter up the main file, however these functions would logi
 """
 import os
 import json
+import time
 import secrets
 import database
 
@@ -20,9 +21,19 @@ def register_client(data):
     if not data.get("key") == os.environ.get("RAT_KEY"):
         return {"error": "invalid key"}, 401
 
+    if data.get("pinecone_namespace") is None:
+        return {"error": "No, or invalid pinecone namespace provided"}, 401
+
     # create the id for the new instance
     client_id=secrets.token_hex(16)
-    db.write_create_document(client_id)
+    db.write_create_document(
+            client_id,
+            data={
+                "created": int(time.time()),
+                "pinecone_namespace": data['pinecone_namespace'],
+                "reports": {}
+                }
+        )
 
     return {
             "client_id": client_id

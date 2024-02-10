@@ -21,7 +21,7 @@ time.sleep(1)
 database = Database()
 task_manager = TaskManager()
 agent = Agent(tools=[ExecutionSandbox()], verbose=False)
-report = Report()
+report = Report(database.namespace)
 
 
 i = 0

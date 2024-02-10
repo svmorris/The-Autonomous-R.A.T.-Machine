@@ -12,13 +12,22 @@
                 <li class="li-block">
                     {{target['target']}}
                     <div class="align-right">
-                        <button>report</button>
-                        <button>pause</button>
-                        <button>▼</button>
+                        {% if target['target'] != "general" %}
+                            <button id="report_button_{{target['target']}}" onclick=get_report("{{data['instance']}}","{{target['target']}}")>report</button>
+                            <button id="pause_button_{{target['target']}}" onclick=toggle_pause_target("{{data['instance']}}","{{target['target']}}")>{{ "resume" if target['stopped'] else "pause"}}</button>
+                        {% endif %}
+                        <button id="toggle_button_{{target['target']}}" onclick=toggle_details("{{target['target']}}")><span>▼</span></button>
                     </div>
                 </li>
 
-                <li class="target_details li-block">
+                <li class="target_details li-block collapsible collapsed" id="details_{{target['target']}}">
+                    {% if data.reports.get(target['target']) is not none %}
+                        {% for paragraph in data.reports[target['target']] %}
+                            <p class="report-paragraph">{{paragraph}}</p>
+                        {% endfor %}
+                        <br>
+                        <br>
+                    {% endif %}
                     <p>Tasks running on target: </p>
                     <ul class="ul-left">
                         {% for task in target['tasks'] %}
@@ -34,4 +43,8 @@
         {% endfor %}
     </ul>
 </body>
+<script src="/static/js/script.js"></script>
+{% for target in data['target_list'] %}
+    <script> set_stored_target_details_state("{{target['target']}}") </script>
+{% endfor %}
 </html>
