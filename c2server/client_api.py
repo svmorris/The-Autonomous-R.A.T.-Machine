@@ -6,7 +6,6 @@ in this file to not clutter up the main file, however these functions would logi
 import os
 import time
 import secrets
-import database
 import pinecone
 from openai import OpenAI
 from datetime import datetime
@@ -17,7 +16,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-from models import BASIC_REPORTER
+import database
+from models import ReporterTool
+from prompts import BASIC_REPORTER
 
 db = database.Database()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -91,6 +92,16 @@ def toggle_target_blacklist(instance, target_to_be_blacklisted):
 
 def generate_report(instance, target_to_report_on):
     """ Create a small report detailing what we know about the target """
+
+    report_tool = ReporterTool(instance, target_to_report_on)
+    print("purpose: ", report_tool.purpose)
+    print("ports: ", report_tool.ports)
+
+
+
+
+
+    # old code
     docsearch = Pinecone.from_existing_index(
         os.environ.get("PINECONE_INDEX"),
         embeddings,

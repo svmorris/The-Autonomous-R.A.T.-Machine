@@ -5,9 +5,19 @@ import os
 import time
 import json
 import string
+import pinecone
+from openai import OpenAI
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Pinecone
 
 from dotenv import load_dotenv
 load_dotenv()
+
+
+pinecone.init(
+    api_key=os.getenv("PINECONE_KEY"),
+    environment="gcp-starter"
+)
 
 class Database:
     def __init__(self):
@@ -84,3 +94,35 @@ class Database:
         """ Get a key from the database """
         data = self.read_document(name)
         return data.get(key)
+
+
+class VectorDatabase:
+    def __init__(self):
+        self.embeddings = OpenAIEmbeddings(
+           openai_api_key=os.getenv("OPENAI_KEY"),
+        )
+        self.index = os.environ.get("PINECONE_INDEX")
+        self.db = Database()
+
+    def get_context(self, instance, keywords) -> str:
+        """ Get context for a keyword or key-phrase """
+        docs = []
+        while True:
+            try:
+                docsearch = Pinecone.from_existing_index(
+                    self.index,
+                    self.embeddings,
+                    namespace=self.db.get(instance, "pinecone_namespace")
+                )
+
+                docs = docsearch.similarity_search(keywords)
+                break
+            except pinecone.core.client.exceptions.ServiceException:
+                print("Pinecone service down, retrying in 1 seconds...")
+                time.sleep(1)
+
+        context = ""
+        for d in docs:
+            context += f"{d.page_content}\n"
+
+        return context
