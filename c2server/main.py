@@ -28,7 +28,9 @@ app = Flask(__name__, static_folder="static")
 api = Api(app)
 app.secret_key = secrets.token_hex(32)
 db = database.Database()
-admin_cookie = ""
+
+# set admin cookie to un-guessable random string until its set
+admin_cookie = secrets.token_hex(32)
 
 @app.after_request
 def add_header(response):
@@ -50,7 +52,6 @@ def admin_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         cookie = request.cookies.get("token")
-        print('cookie: ',cookie , globals()['admin_cookie'])
         if cookie != globals()['admin_cookie']:
             return redirect("/login")
         return f(*args, **kwargs)

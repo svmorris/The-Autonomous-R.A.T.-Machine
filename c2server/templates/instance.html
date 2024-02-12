@@ -21,14 +21,35 @@
                 </li>
 
                 <li class="target_details li-block collapsible collapsed" id="details_{{target['target']}}">
-                    {% if data.reports.get(target['target']) is not none %}
-                        {% for paragraph in data.reports[target['target']] %}
-                            <p class="report-paragraph">{{paragraph}}</p>
+                    {% if data.get("reports", {}).get(target['target']) is not none %}
+                        <p class="target_details_report_data"><strong>Device: </strong> {{data['reports'][target['target']].get("purpose", "Unknown")}} <br><i>(May not be accurate, just a guess based on data)</i></p>
+
+                        <p><strong>Open ports: </strong></p>
+                        <ul class="target_details_report_data">
+                            {% for port in data['reports'][target['target']].get("ports", ["No ports found"])%}
+                                <li>{{port}}</li>
+                            {% endfor %}
+                        </ul>
+
+                        {% for paragraph in data['reports'][target['target']].get("report", []) %}
+                            {% if paragraph['type'] == "title"%}
+                                <h3>{{paragraph['content']}}</h3>
+                            {% endif %}
+                            {% if paragraph['type'] == "text"%}
+                            <p>
+                                {% for p in paragraph['content'].split("\n")%}
+                                    {{p}}
+                                    <br>
+                                {% endfor %}
+                            </p>
+                            {% endif %}
                         {% endfor %}
-                        <br>
-                        <br>
                     {% endif %}
-                    <p>Tasks running on target: </p>
+
+
+
+                    <p class="target_details_report_data"></p>
+                    <h3>Tasks running on target: </h3>
                     <ul class="ul-left">
                         {% for task in target['tasks'] %}
                             <li class="li-list flex-row"> 

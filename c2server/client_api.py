@@ -56,7 +56,6 @@ def get_instance_page_data(instance: str):
 
     target_list = db.get(instance, "target_list")
     reports = db.get(instance, "reports")
-    print('reports: ',reports , type(reports))
 
     return {
             "instance": instance,
@@ -89,56 +88,20 @@ def toggle_target_blacklist(instance, target_to_be_blacklisted):
     return {}, 200
 
 
-
 def generate_report(instance, target_to_report_on):
+    print('target_to_report_on: ',target_to_report_on , type(target_to_report_on))
     """ Create a small report detailing what we know about the target """
-
     report_tool = ReporterTool(instance, target_to_report_on)
-    print("purpose: ", report_tool.purpose)
-    print("ports: ", report_tool.ports)
 
+    report_data = {
+                "purpose": report_tool.purpose,
+                "ports": report_tool.ports,
+                "report": report_tool.write() #list[dict]
+            }
 
+    stored_reports = db.get(instance, "reports")
+    stored_reports[target_to_report_on] = report_data
+    db.set(instance, "reports", stored_reports)
 
+    return report_data, 200
 
-
-    # old code
-    docsearch = Pinecone.from_existing_index(
-        os.environ.get("PINECONE_INDEX"),
-        embeddings,
-        namespace=db.get(instance, "pinecone_namespace")
-    )
-
-    # get the context
-    while True:
-        try:
-            docs = docsearch.similarity_search(target_to_report_on)
-            break
-        except pinecone.core.client.exceptions.ServiceException:
-            print("Pinecone service down, retrying in 1 second...")
-            time.sleep(1)
-    context=""
-    for d in docs:
-        context += f"{d.page_content}\n"
-
-    # format prompt
-    prompt = BASIC_REPORTER.format(target=target_to_report_on, context=context)
-
-    # get the report
-    res = client.chat.completions.create(
-            model="gpt-4",
-            messages = [{"role": "system", "content": prompt}]
-        )
-    report = res.choices[0].message.content.strip()
-
-    # Format report
-    report = report.split("\n")
-
-    # update database
-    reports = db.get(instance, "reports")
-    reports[target_to_report_on] = report
-    db.set(instance, "reports", reports)
-
-
-    return {
-            "report": report
-        }, 200

@@ -52,3 +52,31 @@ Here is the data you can use to find the open ports:
 {context}
 ```
 """
+
+
+
+REPORT_SUBTITLES = [
+        {"title": "Target information", "keyword": ""},
+        {"title": "Recon results", "keyword": "scan"},
+        {"title": "Analysis of port x", "keyword": ""},
+        {"title": "Vulnerability scan results", "keyword": "vulnerability"},
+        {"title": "Conclusion", "keyword": ""},
+]
+
+REPORTER_SYSTEM_PROMPT = """Your job is to write a small network scan and Vulnerability analysis report on the target: `{target}`.
+You will be writing the report one section (sub-title) at a time to conserve context space. The user will give you a sub-title and some random related notes taken during the pentest. You will use it to write one section of the report.
+
+The final report will consist of these subtitles:
+{report_subtitles}
+
+Here are some rules you have to follow:
+    - Only write the sub-title that the user has given you, do not continue on before the user can give you related notes to it.
+    - The notes given might contain information about other targets. You can safely ignore this. Only focus on your target!
+    - If there is not relevant information about your target and sub-title then say "Not enough information"
+    - Write only in passive voice.
+
+
+The report begins below:
+
+# Penetration test report of {target}.
+"""

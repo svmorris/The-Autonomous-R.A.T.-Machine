@@ -159,3 +159,6 @@ input[type="submit"]:hover {
     color: black;
     border: 1px solid #c1c1c1;
 }
+.target_details_report_data {
+    padding-bottom: 2em;
+}
